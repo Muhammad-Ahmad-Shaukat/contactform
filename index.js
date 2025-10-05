@@ -48,29 +48,69 @@ app.post("/send", async (req, res) => {
       throw new Error("Missing required environment variables: MAIL_USER, MAIL_PASS, or RECIPIENT_EMAIL");
     }
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false
-      },
-      connectionTimeout: 30000,
-      greetingTimeout: 15000,
-      socketTimeout: 30000,
-      pool: false,
-      maxConnections: 1,
-      maxMessages: 1
-    });
+      let transporter = nodemailer.createTransport({
+        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.MAIL_USER,
+          pass: process.env.MAIL_PASS,
+        },
+        tls: {
+          rejectUnauthorized: false,
+          ciphers: 'SSLv3'
+        },
+        connectionTimeout: 60000,
+        greetingTimeout: 30000,
+        socketTimeout: 60000,
+        pool: false,
+        maxConnections: 1,
+        maxMessages: 1,
+        requireTLS: true,
+        debug: true,
+        logger: true
+      });
 
     console.log("🔍 Verifying Gmail connection...");
-    await transporter.verify();
-    console.log("✅ Gmail connection verified successfully");
+    
+    try {
+      await transporter.verify();
+      console.log("✅ Gmail connection verified successfully");
+    } catch (verifyError) {
+      console.log("⚠️ Primary connection failed, trying alternative configuration...");
+      
+      // Alternative configuration for Railway
+      const altTransporter = nodemailer.createTransport({
+        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.MAIL_USER,
+          pass: process.env.MAIL_PASS,
+        },
+        tls: {
+          rejectUnauthorized: false,
+          ciphers: 'SSLv3'
+        },
+        connectionTimeout: 90000,
+        greetingTimeout: 60000,
+        socketTimeout: 90000,
+        pool: false,
+        maxConnections: 1,
+        maxMessages: 1,
+        requireTLS: false,
+        debug: true,
+        logger: true
+      });
+      
+      await altTransporter.verify();
+      console.log("✅ Alternative Gmail connection verified successfully");
+      
+      // Use the alternative transporter
+      transporter = altTransporter;
+    }
     const mailOptions = {
       from: `"Quote Form" <${process.env.MAIL_USER}>`,
       to: process.env.RECIPIENT_EMAIL,
