@@ -48,14 +48,28 @@ app.post("/send", async (req, res) => {
   }
 
   try {
-    // Nodemailer config (Gmail App Password)
+    // Nodemailer config with better timeout and connection settings
     const transporter = nodemailer.createTransport({
       service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
       },
+      connectionTimeout: 60000, // 60 seconds
+      greetingTimeout: 30000,   // 30 seconds
+      socketTimeout: 60000,     // 60 seconds
+      pool: true,
+      maxConnections: 1,
+      maxMessages: 3,
+      rateDelta: 20000,
+      rateLimit: 5
     });
+
+    // Verify connection configuration
+    await transporter.verify();
 
     const mailOptions = {
       from: `"Quote Form" <${process.env.MAIL_USER}>`,
