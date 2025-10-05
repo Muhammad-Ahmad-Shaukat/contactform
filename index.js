@@ -1,25 +1,26 @@
 import express from "express";
 import cors from "cors";
-import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+import { Resend } from "resend";
 
+dotenv.config();
 const app = express();
 
-// ===== Middleware =====
 app.use(express.json());
 app.use(
   cors({
-    origin: "*", // allow all origins (fine for testing)
+    origin: "*",
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// ===== Health Check =====
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 app.get("/", (req, res) => {
-  res.send("🚀 Form Email API is running and CORS enabled!");
+  res.send("🚀 Email API is running successfully on Railway!");
 });
 
-// ===== Email Handler =====
 app.post("/send", async (req, res) => {
   const {
     pickupDate,
@@ -32,7 +33,6 @@ app.post("/send", async (req, res) => {
     passengers,
   } = req.body;
 
-  // Validation
   if (
     !pickupDate ||
     !pickupTime ||
@@ -48,17 +48,8 @@ app.post("/send", async (req, res) => {
   }
 
   try {
-    // Nodemailer config (Gmail App Password)
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-    });
-
-    const mailOptions = {
-      from: `"Quote Form" <${process.env.MAIL_USER}>`,
+    const response = await resend.emails.send({
+      from: "Quote Form <onboarding@resend.dev>",
       to: process.env.RECIPIENT_EMAIL,
       subject: `New Quote Request from ${fullName}`,
       html: `
@@ -70,18 +61,15 @@ app.post("/send", async (req, res) => {
         <p><b>Full Name:</b> ${fullName}</p>
         <p><b>Phone:</b> ${phone}</p>
         <p><b>Email:</b> ${email}</p>
-        <p><b>Passengers:</b> ${passengers}</p>
+        <p><b>Passengers:</b> ${passengers || "N/A"}</p>
       `,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent successfully from ${fullName}`);
+    console.log("✅ Email sent:", response);
     res.json({ success: true, message: "Email sent successfully!" });
   } catch (error) {
-    console.error("❌ Email Error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to send email.", error: error.message });
+    console.error("❌ Error sending email:", error);
+    res.status(500).json({ success: false, message: "Failed to send email.", error });
   }
 });
 
