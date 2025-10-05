@@ -4,22 +4,19 @@ import nodemailer from "nodemailer";
 
 const app = express();
 
-// ===== Middleware =====
 app.use(express.json());
 app.use(
   cors({
-    origin: "*", // allow all origins (fine for testing)
+    origin: "*",
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// ===== Health Check =====
 app.get("/", (req, res) => {
   res.send("🚀 Form Email API is running and CORS enabled!");
 });
 
-// ===== Email Handler =====
 app.post("/send", async (req, res) => {
   const {
     pickupDate,
@@ -32,7 +29,6 @@ app.post("/send", async (req, res) => {
     passengers,
   } = req.body;
 
-  // Validation
   if (
     !pickupDate ||
     !pickupTime ||
@@ -48,29 +44,33 @@ app.post("/send", async (req, res) => {
   }
 
   try {
-    // Nodemailer config with better timeout and connection settings
+    if (!process.env.MAIL_USER || !process.env.MAIL_PASS || !process.env.RECIPIENT_EMAIL) {
+      throw new Error("Missing required environment variables: MAIL_USER, MAIL_PASS, or RECIPIENT_EMAIL");
+    }
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       host: "smtp.gmail.com",
       port: 587,
-      secure: false, // true for 465, false for other ports
+      secure: false,
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
       },
-      connectionTimeout: 60000, // 60 seconds
-      greetingTimeout: 30000,   // 30 seconds
-      socketTimeout: 60000,     // 60 seconds
-      pool: true,
+      tls: {
+        rejectUnauthorized: false
+      },
+      connectionTimeout: 30000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000,
+      pool: false,
       maxConnections: 1,
-      maxMessages: 3,
-      rateDelta: 20000,
-      rateLimit: 5
+      maxMessages: 1
     });
 
-    // Verify connection configuration
+    console.log("🔍 Verifying Gmail connection...");
     await transporter.verify();
-
+    console.log("✅ Gmail connection verified successfully");
     const mailOptions = {
       from: `"Quote Form" <${process.env.MAIL_USER}>`,
       to: process.env.RECIPIENT_EMAIL,
@@ -88,14 +88,35 @@ app.post("/send", async (req, res) => {
       `,
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent successfully from ${fullName}`);
+    console.log("📧 Sending email...");
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Email sent successfully from ${fullName}`, info.messageId);
     res.json({ success: true, message: "Email sent successfully!" });
   } catch (error) {
-    console.error("❌ Email Error:", error);
+    console.error("❌ Email Error Details:", {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode
+    });
+    let errorMessage = "Failed to send email.";
+    if (error.code === 'EAUTH') {
+      errorMessage = "Gmail authentication failed. Check your email credentials.";
+    } else if (error.code === 'ECONNECTION') {
+      errorMessage = "Could not connect to Gmail servers.";
+    } else if (error.code === 'ETIMEDOUT') {
+      errorMessage = "Connection to Gmail timed out.";
+    }
+    
     res
       .status(500)
-      .json({ success: false, message: "Failed to send email.", error: error.message });
+      .json({ 
+        success: false, 
+        message: errorMessage, 
+        error: error.message,
+        code: error.code 
+      });
   }
 });
 

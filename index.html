@@ -237,7 +237,7 @@
                         </div>
                         <div class="form-group">
                             <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" name="phone" placeholder="+1 (555) 123-4567" pattern="^\+?1?[.\s-]?\(?[0-9]{3}\)?[.\s-]?[0-9]{3}[.\s-]?[0-9]{4}$" required>
+                            <input type="tel" id="phone" name="phone" placeholder="+1 (555) 123-4567 or +44 20 7946 0958" pattern="^[\+]?[0-9\s\-\(\)]{7,20}$" required>
                             <small class="error" id="err-phone"></small>
                         </div>
                         <div class="form-group">
@@ -297,7 +297,7 @@
         if (!formData.pickupDate) showError("pickupDate", "Please select a pick-up date.");
         if (!formData.pickupTime) showError("pickupTime", "Please select a time.");
         if (formData.fullName.trim().length < 3) showError("fullName", "Enter a valid full name (min 3 chars).");
-        if (!/^\+?1?[.\s-]?\(?[0-9]{3}\)?[.\s-]?[0-9]{3}[.\s-]?[0-9]{4}$/.test(formData.phone)) showError("phone", "Enter a valid US phone number.");
+        if (!/^[\+]?[0-9\s\-\(\)]{7,20}$/.test(formData.phone)) showError("phone", "Enter a valid phone number (7-20 digits with optional +, spaces, hyphens, or parentheses).");
         if (!/\S+@\S+\.\S+/.test(formData.email)) showError("email", "Enter a valid email.");
         if (!formData.pickupLocation.trim()) showError("pickupLocation", "Please enter a pickup location.");
         if (!formData.dropoffLocation.trim()) showError("dropoffLocation", "Please enter a drop-off location.");
