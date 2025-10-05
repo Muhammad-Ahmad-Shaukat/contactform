@@ -4,22 +4,22 @@ import nodemailer from "nodemailer";
 
 const app = express();
 
-// ====== Middleware ======
+// ===== Middleware =====
 app.use(express.json());
+app.use(
+  cors({
+    origin: "*", // allow all origins (fine for testing)
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-// Allow CORS from all origins
-app.use(cors({
-  origin: "*", // ⚠️ Allow all origins (use specific domain in production)
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
-
-// ====== Health check ======
+// ===== Health Check =====
 app.get("/", (req, res) => {
   res.send("🚀 Form Email API is running and CORS enabled!");
 });
 
-// ====== Email Handler ======
+// ===== Email Handler =====
 app.post("/send", async (req, res) => {
   const {
     pickupDate,
@@ -42,16 +42,18 @@ app.post("/send", async (req, res) => {
     !phone ||
     !email
   ) {
-    return res.status(400).json({ success: false, message: "Missing required fields." });
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields." });
   }
 
   try {
-    // Nodemailer config (using Gmail App Password)
+    // Nodemailer config (Gmail App Password)
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "ahmadshaukat328@gmail.com",
-        pass: "rdzc kzuc vppj egih",
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
       },
     });
 
@@ -77,7 +79,9 @@ app.post("/send", async (req, res) => {
     res.json({ success: true, message: "Email sent successfully!" });
   } catch (error) {
     console.error("❌ Email Error:", error);
-    res.status(500).json({ success: false, message: "Failed to send email." });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to send email.", error: error.message });
   }
 });
 

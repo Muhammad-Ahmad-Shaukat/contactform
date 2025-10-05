@@ -1,8 +1,9 @@
 {
   "name": "form-email-api",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Form API for sending quote request emails using Nodemailer on Railway",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
