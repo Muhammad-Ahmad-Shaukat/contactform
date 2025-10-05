@@ -4,19 +4,22 @@ import nodemailer from "nodemailer";
 
 const app = express();
 
+// ===== Middleware =====
 app.use(express.json());
 app.use(
   cors({
-    origin: "*",
+    origin: "*", // allow all origins (fine for testing)
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
+// ===== Health Check =====
 app.get("/", (req, res) => {
   res.send("🚀 Form Email API is running and CORS enabled!");
 });
 
+// ===== Email Handler =====
 app.post("/send", async (req, res) => {
   const {
     pickupDate,
@@ -29,6 +32,7 @@ app.post("/send", async (req, res) => {
     passengers,
   } = req.body;
 
+  // Validation
   if (
     !pickupDate ||
     !pickupTime ||
@@ -44,73 +48,15 @@ app.post("/send", async (req, res) => {
   }
 
   try {
-    if (!process.env.MAIL_USER || !process.env.MAIL_PASS || !process.env.RECIPIENT_EMAIL) {
-      throw new Error("Missing required environment variables: MAIL_USER, MAIL_PASS, or RECIPIENT_EMAIL");
-    }
+    // Nodemailer config (Gmail App Password)
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
+      },
+    });
 
-      let transporter = nodemailer.createTransport({
-        service: "gmail",
-        host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
-        auth: {
-          user: process.env.MAIL_USER,
-          pass: process.env.MAIL_PASS,
-        },
-        tls: {
-          rejectUnauthorized: false,
-          ciphers: 'SSLv3'
-        },
-        connectionTimeout: 60000,
-        greetingTimeout: 30000,
-        socketTimeout: 60000,
-        pool: false,
-        maxConnections: 1,
-        maxMessages: 1,
-        requireTLS: true,
-        debug: true,
-        logger: true
-      });
-
-    console.log("🔍 Verifying Gmail connection...");
-    
-    try {
-      await transporter.verify();
-      console.log("✅ Gmail connection verified successfully");
-    } catch (verifyError) {
-      console.log("⚠️ Primary connection failed, trying alternative configuration...");
-      
-      // Alternative configuration for Railway
-      const altTransporter = nodemailer.createTransport({
-        service: "gmail",
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.MAIL_USER,
-          pass: process.env.MAIL_PASS,
-        },
-        tls: {
-          rejectUnauthorized: false,
-          ciphers: 'SSLv3'
-        },
-        connectionTimeout: 90000,
-        greetingTimeout: 60000,
-        socketTimeout: 90000,
-        pool: false,
-        maxConnections: 1,
-        maxMessages: 1,
-        requireTLS: false,
-        debug: true,
-        logger: true
-      });
-      
-      await altTransporter.verify();
-      console.log("✅ Alternative Gmail connection verified successfully");
-      
-      // Use the alternative transporter
-      transporter = altTransporter;
-    }
     const mailOptions = {
       from: `"Quote Form" <${process.env.MAIL_USER}>`,
       to: process.env.RECIPIENT_EMAIL,
@@ -128,35 +74,14 @@ app.post("/send", async (req, res) => {
       `,
     };
 
-    console.log("📧 Sending email...");
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent successfully from ${fullName}`, info.messageId);
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Email sent successfully from ${fullName}`);
     res.json({ success: true, message: "Email sent successfully!" });
   } catch (error) {
-    console.error("❌ Email Error Details:", {
-      message: error.message,
-      code: error.code,
-      command: error.command,
-      response: error.response,
-      responseCode: error.responseCode
-    });
-    let errorMessage = "Failed to send email.";
-    if (error.code === 'EAUTH') {
-      errorMessage = "Gmail authentication failed. Check your email credentials.";
-    } else if (error.code === 'ECONNECTION') {
-      errorMessage = "Could not connect to Gmail servers.";
-    } else if (error.code === 'ETIMEDOUT') {
-      errorMessage = "Connection to Gmail timed out.";
-    }
-    
+    console.error("❌ Email Error:", error);
     res
       .status(500)
-      .json({ 
-        success: false, 
-        message: errorMessage, 
-        error: error.message,
-        code: error.code 
-      });
+      .json({ success: false, message: "Failed to send email.", error: error.message });
   }
 });
 
