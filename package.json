@@ -2,10 +2,10 @@
   "name": "form-email-api",
   "version": "1.0.0",
   "description": "Form API for sending quote request emails using Resend on Railway",
-  "main": "server.js",
+  "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
