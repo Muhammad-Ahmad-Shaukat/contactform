@@ -1,19 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick Quote | Reliable Transportation Services</title>
-    <meta name="description" content="Get a quick quote for your transportation needs. Fast, reliable service with transparent pricing.">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        body {
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+<style>
+        .maindiv {
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -27,6 +13,11 @@
             justify-content: center;
             align-items: center;
             animation: fadeIn 0.8s ease-out;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
         }
         .quote-form-container {
             background-color: rgba(255, 255, 255, 0.95);
@@ -194,16 +185,17 @@
             .quote-form-container {
                 padding: 1rem;
             }
+
             h2 {
                 font-size: 1.4rem;
             }
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
+                .form-grid {
+        grid-template-columns: 1fr;
+    }
         }
     </style>
-</head>
-<body>
+
+<div class="maindiv">
     <section class="quote-form-section" aria-label="Get a Quick Quote">
         <div class="quote-form-container">
             <h2>Get a Quick Quote</h2>
@@ -237,7 +229,7 @@
                         </div>
                         <div class="form-group">
                             <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" name="phone" placeholder="+1 (555) 123-4567 or +44 20 7946 0958" pattern="^[\+]?[0-9\s\-\(\)]{7,20}$" required>
+                            <input type="tel" id="phone" name="phone" placeholder="+1 (555) 123-4567" pattern="^[\+]?[0-9\s\-\(\)]{7,20}$" required>
                             <small class="error" id="err-phone"></small>
                         </div>
                         <div class="form-group">
@@ -263,20 +255,17 @@
             </div>
         </div>
     </section>
+</div>
 <script>
     const form = document.getElementById("quoteForm");
     const successMessage = document.getElementById("successMessage");
     const formFields = document.getElementById("formFields");
     const quoteDetails = document.getElementById("quoteDetails");
-
-    // Set minimum date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('pickupDate').setAttribute('min', today);
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
-
-        // Clear old errors
         document.querySelectorAll(".error").forEach(err => {
             err.textContent = "";
             err.classList.remove("show");
@@ -284,8 +273,6 @@
 
         const formData = Object.fromEntries(new FormData(form).entries());
         let isValid = true;
-
-        // Validation functions
         const showError = (field, msg) => {
             const errorElement = document.getElementById(`err-${field}`);
             errorElement.textContent = msg;
@@ -293,7 +280,6 @@
             isValid = false;
         };
 
-        // Simple validations
         if (!formData.pickupDate) showError("pickupDate", "Please select a pick-up date.");
         if (!formData.pickupTime) showError("pickupTime", "Please select a time.");
         if (formData.fullName.trim().length < 3) showError("fullName", "Enter a valid full name (min 3 chars).");
@@ -304,14 +290,12 @@
 
         if (!isValid) return;
 
-        // Show loading state on button
         const submitBtn = document.querySelector('.submit-btn');
         const originalText = submitBtn.textContent;
         submitBtn.textContent = 'Sending...';
         submitBtn.disabled = true;
 
         try {
-            // Send data to your Railway API
             const response = await fetch('https://contactform-production-8384.up.railway.app/send', {
                 method: 'POST',
                 headers: {
@@ -323,7 +307,6 @@
             const result = await response.json();
 
             if (result.success) {
-                // Format date for display
                 const formattedDate = new Date(formData.pickupDate).toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',
@@ -366,6 +349,3 @@
         }
     });
 </script>
-
-</body>
-</html>

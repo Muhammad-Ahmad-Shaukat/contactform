@@ -31,6 +31,7 @@ app.post("/send", async (req, res) => {
     phone,
     email,
     passengers,
+    website,
   } = req.body;
 
   if (
@@ -53,6 +54,7 @@ app.post("/send", async (req, res) => {
       to: process.env.RECIPIENT_EMAIL,
       subject: `New Quote Request from ${fullName}`,
       html: `
+        <h1>Qoute from ${website || ""}</h1>
         <h2>New Quote Submission</h2>
         <p><b>Pick-Up Date:</b> ${pickupDate}</p>
         <p><b>Pick-Up Time:</b> ${pickupTime}</p>
